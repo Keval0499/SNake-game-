@@ -1,0 +1,137 @@
+# Author: Keval Raval
+
+import turtle
+import time
+import random
+
+# Snake class definition
+class Snake:
+    def __init__(self):
+        self.body_segments = []
+        self._initialize_snake()
+        self.head = self.body_segments[0]
+    
+    def _initialize_snake(self):
+        self._add_segment((0, 0), "green")
+        for i in range(2):
+            self._add_segment((-(i + 1) * 20, 0))
+    
+    def _add_segment(self, position, color="grey"):
+        segment = turtle.Turtle("square")
+        segment.color(color)
+        segment.penup()
+        segment.goto(position)
+        self.body_segments.append(segment)
+    
+    def grow(self):
+        self._add_segment(self.body_segments[-1].position())
+    
+    def move_forward(self):
+        for index in range(len(self.body_segments) - 1, 0, -1):
+            x = self.body_segments[index - 1].xcor()
+            y = self.body_segments[index - 1].ycor()
+            self.body_segments[index].goto(x, y)
+        self.head.forward(20)
+    
+    def turn_up(self):
+        if self.head.heading() != 270:
+            self.head.setheading(90)
+    
+    def turn_down(self):
+        if self.head.heading() != 90:
+            self.head.setheading(270)
+    
+    def turn_left(self):
+        if self.head.heading() != 0:
+            self.head.setheading(180)
+    
+    def turn_right(self):
+        if self.head.heading() != 180:
+            self.head.setheading(0)
+
+# Food class definition
+class Food(turtle.Turtle):
+    def __init__(self):
+        super().__init__()
+        self.shape("circle")
+        self.penup()
+        self.shapesize(stretch_len=0.5, stretch_wid=0.5)
+        self.color("blue")
+        self.speed("fastest")
+        self.relocate()
+    
+    def relocate(self):
+        x_pos = random.randint(-240, 240)
+        y_pos = random.randint(-240, 240)
+        self.goto(x_pos, y_pos)
+
+# Game window setup
+window = turtle.Screen()
+window.bgcolor("black")
+window.title("Snake Game")
+window.setup(width=600, height=600)
+turtle.tracer(n=1, delay=17)  # 60 FPS approx.
+
+# Game objects
+snake = Snake()
+food = Food()
+
+# Game state variables
+current_score = 0
+move_delay = 0.3
+game_active = True
+
+# Score display
+score_writer = turtle.Turtle()
+score_writer.color("white")
+score_writer.penup()
+score_writer.goto(0, 260)
+score_writer.hideturtle()
+score_writer.write(f"Score: {current_score}", align="center", font=("Arial", 24, "normal"))
+
+# Keyboard bindings
+window.listen()
+window.onkey(snake.turn_up, "Up")
+window.onkey(snake.turn_down, "Down")
+window.onkey(snake.turn_left, "Left")
+window.onkey(snake.turn_right, "Right")
+
+# Game update logic
+def update_game():
+    global current_score, move_delay, game_active
+
+    snake.move_forward()
+
+    # Food collision
+    if snake.head.distance(food) < 15:
+        food.relocate()
+        snake.grow()
+        current_score += 10
+        score_writer.clear()
+        score_writer.write(f"Score: {current_score}", align="center", font=("Arial", 24, "normal"))
+        if move_delay > 0.05:
+            move_delay -= 0.05
+
+    # Wall collision
+    if abs(snake.head.xcor()) > 280 or abs(snake.head.ycor()) > 280:
+        end_game()
+
+    # Self collision
+    for segment in snake.body_segments[1:]:
+        if snake.head.distance(segment) < 10:
+            end_game()
+
+def end_game():
+    global game_active
+    game_active = False
+    score_writer.goto(0, 0)
+    score_writer.color("red")
+    score_writer.write("Game Over", align="center", font=("Arial", 36, "bold"))
+
+# Game loop
+while game_active:
+    update_game()
+    window.update()
+    time.sleep(move_delay)
+
+window.mainloop()
